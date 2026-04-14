@@ -963,12 +963,15 @@ setInterval(()=>{
 },1000);
 
 /* ── PASSWORD ── */
-const PW='ilovedesign';
-function checkPw(){
+const PW_HASH='2089c1ddfd4899ff98166b4d1ac8515e8b13773ecad27bc9e481df0505ccf795';
+async function checkPw(){
   const val=document.getElementById('pw-input').value;
   const err=document.getElementById('pw-err');
   const field=document.getElementById('pw-input');
-  if(val===PW){
+  const enc=new TextEncoder();
+  const buf=await crypto.subtle.digest('SHA-256',enc.encode(val));
+  const hash=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hash===PW_HASH){
     const ov=document.getElementById('pw-ov');
     ov.classList.add('out');
     setTimeout(()=>ov.remove(),450);
