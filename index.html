@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallchain Airdrop</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Bai+Jamjuree:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--paper:#141414;--el:#1C1C1C;--hover:#2E2E2E;
+  --border:#3A3A3A;--border-h:#4D4323;
+  --pr:#F7D133;--pr-d:#D9AE26;--pr-a:#B88D19;
+  --t1:#F5F5F5;--t2:#E3E3E3;--t3:#C9C9C9;--td:rgba(245,245,245,.35);
+  --r100:100px;--r20:20px;--r16:16px;--r14:14px;--r12:12px;--r8:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'Noto Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── PASSWORD GATE ── */
+.pw-ov{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;transition:opacity .4s ease}
+.pw-ov.out{opacity:0;pointer-events:none}
+.pw-box{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.pw-logo{font-family:'Bai Jamjuree',sans-serif;font-size:18px;font-weight:700;color:var(--pr);letter-spacing:.04em}
+.pw-title{font-size:15px;color:var(--td);text-align:center;letter-spacing:.02em}
+.pw-field-wrap{width:100%;position:relative}
+.pw-field{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:var(--r12);padding:13px 16px;color:var(--t1);font-family:inherit;font-size:15px;outline:none;transition:border-color .15s;letter-spacing:.04em}
+.pw-field:focus{border-color:rgba(247,209,51,.4)}
+.pw-field.err{border-color:rgba(239,83,80,.5);animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pw-err{font-size:12px;color:rgba(239,83,80,.8);text-align:center;min-height:16px;transition:opacity .2s}
+.pw-btn{width:100%;padding:13px;border-radius:var(--r100);border:none;background:var(--pr);color:#151515;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
+.pw-btn:hover{background:var(--pr-d)}
+
+/* ── DEV NAV ── */
+.dev{position:fixed;top:0;left:0;right:0;z-index:400;background:rgba(10,10,10,.97);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.dev-l{font-size:10px;color:var(--td);text-transform:uppercase;letter-spacing:.1em;margin-right:2px}
+.dev-sep{width:1px;height:18px;background:var(--border);margin:0 3px}
+.db{font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--t3);font-family:inherit;transition:all .12s}
+.db:hover{background:var(--el);color:var(--t1)}
+.db.on{background:var(--pr);border-color:var(--pr);color:#151515;font-weight:600}
+
+/* ── PAGE ── */
+.page{padding-top:46px;min-height:100vh;display:flex;flex-direction:column}
+.rev{flex:1;display:flex;flex-direction:column;align-items:center;padding:40px 20px 0}
+
+/* header */
+.rev-header{text-align:center;margin-bottom:36px;width:100%;max-width:880px}
+.rev-h1{font-size:clamp(24px,3vw,32px);font-weight:700;letter-spacing:-.01em;color:var(--t1)}
+.rev-sub{font-size:14px;color:var(--t3);margin-top:6px}
+
+/* grid */
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:100%;max-width:880px}
+
+/* ── CARD SHELL 4:5 ── */
+.day-col{display:flex;flex-direction:column;align-items:center}
+.card-wrap{width:100%;position:relative}
+.card-wrap::before{content:'';display:block;padding-top:125%}
+.card-inner{position:absolute;inset:0;border-radius:var(--r20);overflow:hidden}
+
+/* ── CLOSED CARD ── */
+.card-closed{
+  position:absolute;inset:0;background:var(--paper);border:1px solid var(--border);
+  border-radius:var(--r20);display:flex;flex-direction:column;
+  align-items:center;justify-content:space-between;
+  padding:20px 18px 22px;overflow:hidden;cursor:pointer;transition:border-color .2s;
+}
+.card-closed:hover{border-color:rgba(247,209,51,.3)}
+@keyframes grain{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,2px)}75%{transform:translate(2px,-2px)}}
+.cc-grain{position:absolute;inset:-50%;width:200%;height:200%;opacity:.03;animation:grain .5s steps(1) infinite;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:100px 100px;pointer-events:none}
+.cc-glow{position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(247,209,51,.09) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-55%);pointer-events:none}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+.cc-shimmer{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(247,209,51,.4),transparent);animation:shimmer 4s ease-in-out infinite;pointer-events:none}
+.cc-part{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--td);position:relative}
+
+/* ── LOOTBOX SVG ── */
+.lootbox-wrap{position:relative;flex:1;display:flex;align-items:center;justify-content:center;width:100%}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.lootbox-svg{animation:float 3.5s ease-in-out infinite;position:relative;z-index:1}
+@keyframes pulse-ring{0%,100%{opacity:0;transform:scale(.85)}50%{opacity:.2;transform:scale(1.08)}}
+.lb-ring{position:absolute;width:90%;height:90%;border-radius:50%;border:1px solid var(--pr);animation:pulse-ring 3.5s ease-in-out infinite;top:5%;left:5%}
+
+.cc-tap{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,245,245,.2);position:relative}
+
+/* ── OPEN CARD ── */
+.card-open{
+  position:absolute;inset:0;background:var(--paper);border:1px solid rgba(247,209,51,.22);
+  border-radius:var(--r20);display:flex;flex-direction:column;
+  align-items:center;justify-content:space-between;padding:20px 18px 22px;
+  opacity:0;pointer-events:none;transition:opacity .25s ease;
+}
+.card-open::before{content:'';position:absolute;inset:0;border-radius:var(--r20);background:radial-gradient(ellipse at 50% 0%,rgba(247,209,51,.07) 0%,transparent 55%);pointer-events:none}
+.card-open.vis{opacity:1;pointer-events:all}
+.co-part-lbl{position:relative;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--td)}
+.co-mid{position:relative;text-align:center;width:100%}
+.co-alloc-lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--td);margin-bottom:7px}
+.co-num{font-size:clamp(34px,5vw,50px);font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--t1)}
+.co-ticker{font-size:14px;color:var(--t3);margin-top:4px}
+.co-tier-wrap{position:relative;text-align:center}
+.co-tier-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--td);margin-bottom:7px}
+.co-tier-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r100);border:1px solid rgba(247,209,51,.3);background:rgba(247,209,51,.07);font-size:12px;font-weight:600;color:var(--pr);letter-spacing:.05em;text-transform:uppercase}
+
+/* ── LOCKED CARD ── */
+.card-locked{
+  position:absolute;inset:0;background:var(--paper);border:1px solid var(--border);
+  border-radius:var(--r20);display:flex;flex-direction:column;
+  align-items:center;justify-content:space-between;padding:20px 18px 22px;
+}
+.cl-part{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--t3)}
+.cl-mid{display:flex;flex-direction:column;align-items:center;gap:12px}
+.cl-ico{width:48px;height:48px;border-radius:50%;background:var(--el);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+.cl-cd{font-size:22px;font-weight:700;letter-spacing:.05em;color:var(--t2);font-variant-numeric:tabular-nums}
+.cl-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--td)}
+.cl-bottom{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,245,245,.18)}
+
+/* ── HEADER TOTAL ── */
+.rev-total{margin:14px 0 10px;display:flex;align-items:baseline;justify-content:center;gap:8px}
+.rev-total-num{font-size:clamp(38px,5.5vw,56px);font-weight:700;letter-spacing:-.02em;color:var(--t1);line-height:1}
+.rev-total-ticker{font-size:15px;color:var(--t3);font-weight:500}
+.rev-meta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.rev-tier-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:var(--r100);border:1px solid rgba(247,209,51,.3);background:rgba(247,209,51,.07);font-size:12px;font-weight:600;color:var(--pr);letter-spacing:.05em;text-transform:uppercase}
+.rev-rank-pill{display:inline-flex;align-items:center;padding:5px 13px;border-radius:var(--r100);border:1px solid var(--border);background:var(--el);font-size:12px;color:var(--t3);letter-spacing:.03em}
+.rev-hdr-progress{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.rev-hdr-seg{width:36px;height:3px;border-radius:2px;background:var(--border);transition:background .4s}
+.rev-hdr-seg.done{background:var(--pr)}
+
+/* ── STEPPER ── */
+.stepper{display:flex;align-items:flex-start;justify-content:center;gap:0;margin-bottom:20px;width:100%;max-width:440px}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;min-width:80px}
+.step-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:var(--paper);color:var(--td);transition:all .25s;flex-shrink:0}
+.step.s-done .step-circle{background:rgba(247,209,51,.1);border-color:rgba(247,209,51,.45);color:var(--pr)}
+.step.s-active .step-circle{background:var(--pr);border-color:var(--pr);color:#151515}
+.step.s-locked .step-circle{background:var(--el);border-color:var(--border);color:rgba(245,245,245,.18)}
+.step-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--td);white-space:nowrap}
+.step.s-done .step-lbl,.step.s-active .step-lbl{color:var(--t3)}
+.step.s-active .step-lbl{color:var(--t1)}
+.step-line{flex:1;height:1.5px;background:var(--border);margin-top:17px;min-width:40px;max-width:80px;transition:background .3s}
+.step-line.done{background:rgba(247,209,51,.4)}
+.step-sub{font-size:9px;letter-spacing:.04em;color:var(--td);text-align:center;margin-top:2px;line-height:1.3}
+.step.s-done .step-sub{color:var(--pr);font-weight:600}
+
+/* ── SHARE CARD 4:5 ── */
+.share-wrap{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 auto;margin-bottom:16px}
+.share-card{width:100%;aspect-ratio:4/5;background:var(--paper);border:1px solid rgba(247,209,51,.22);border-radius:var(--r20);padding:24px 22px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+.share-card::before{content:'';position:absolute;inset:0;border-radius:var(--r20);background:radial-gradient(ellipse at 50% 0%,rgba(247,209,51,.09) 0%,transparent 55%);pointer-events:none}
+.share-card.is-closed{cursor:pointer;border-color:var(--border)}
+.share-card.is-closed:hover{border-color:rgba(247,209,51,.25)}
+.sc-lbl{position:relative;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--td)}
+.sc-num{position:relative;font-size:clamp(44px,10vw,58px);font-weight:700;letter-spacing:-.02em;color:var(--t1);line-height:1;font-variant-numeric:tabular-nums}
+.sc-ticker{position:relative;font-size:13px;color:var(--t3);margin-top:-2px}
+.sc-header{display:flex;align-items:center;justify-content:space-between;width:100%;position:relative}
+.sc-user{display:flex;align-items:center;gap:6px}
+.sc-avatar{width:24px;height:24px;border-radius:50%;background:var(--el);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.sc-handle{font-size:10px;color:var(--td);letter-spacing:.02em}
+.sc-header-tier{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.sc-tier-lbl{font-size:9px;color:var(--td);letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+.sc-tier-name{font-size:11px;font-weight:700;color:var(--pr);letter-spacing:.06em;text-transform:uppercase}
+.sc-lbl-main{position:relative;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--td);text-align:center}
+.sc-parts-ind{display:flex;gap:4px;align-items:center;justify-content:center;position:relative}
+.sc-part-seg{height:3px;width:22px;border-radius:2px;background:var(--border)}
+.sc-part-seg.done{background:var(--pr)}
+.sc-locked-note{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(245,245,245,.22);position:relative}
+
+/* ── RANK BOX ── */
+.sc-rank-box{width:100%;background:rgba(247,209,51,.05);border:1px solid rgba(247,209,51,.18);border-radius:var(--r12);padding:8px 12px;text-align:center;position:relative}
+.sc-rank-big{font-size:15px;font-weight:700;color:var(--pr);letter-spacing:-.01em}
+.sc-rank-sub{font-size:10px;color:var(--td);margin-top:2px;letter-spacing:.03em}
+
+/* ── INLINE CRITERIA CHIPS ── */
+.sc-crit-wrap{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;width:100%;position:relative}
+.sc-crit-chip{font-size:9px;padding:3px 7px;border-radius:100px;border:1px solid;white-space:nowrap;font-weight:500;letter-spacing:.03em}
+.sc-crit-chip.done{color:#66BB6A;border-color:rgba(102,187,106,.3);background:rgba(102,187,106,.06)}
+.sc-crit-chip.miss{color:var(--td);border-color:var(--border);background:transparent}
+.sc-tge{font-size:10px;color:var(--pr);letter-spacing:.03em;position:relative;opacity:.8}
+
+/* ── ACTION ROW ── */
+.action-row{width:100%;max-width:320px;display:flex;align-items:center;gap:8px;margin:0 auto}
+.action-row .btn{flex:1}
+.replay-ico{width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);font-size:15px;flex-shrink:0;transition:all .15s;font-family:inherit}
+.replay-ico:hover{border-color:rgba(247,209,51,.4);color:var(--pr)}
+
+@media(max-width:640px){.share-wrap,.action-row{max-width:280px}.stepper{max-width:280px}}
+
+/* ── COMPACT DAY BOXES ── */
+.day-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:880px;margin-top:24px}
+.day-box{background:var(--paper);border:1px solid var(--border);border-radius:var(--r16);padding:14px 12px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:110px;position:relative;transition:border-color .2s}
+.day-box.is-open{border-color:rgba(247,209,51,.18)}
+.day-box.is-closed{cursor:pointer}
+.day-box.is-closed:hover{border-color:rgba(247,209,51,.3)}
+.db-part{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--td)}
+.db-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.db-delta{font-size:22px;font-weight:700;color:var(--pr);letter-spacing:-.01em;line-height:1}
+.db-wall{font-size:10px;color:var(--td);letter-spacing:.06em}
+.db-lock-ico{width:30px;height:30px;border-radius:50%;background:var(--el);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.db-cd{font-size:15px;font-weight:700;color:var(--t2);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.db-when{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--td);text-align:center}
+.db-locked-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,245,245,.14)}
+.db-open-btn{font-size:11px;font-weight:600;color:#151515;background:var(--pr);border:none;border-radius:var(--r100);padding:5px 14px;cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap}
+.db-open-btn:hover{background:var(--pr-d)}
+.db-replay{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--el);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--td);font-size:11px;transition:all .15s;line-height:1}
+.db-replay:hover{border-color:rgba(247,209,51,.4);color:var(--pr)}
+@media(max-width:640px){.day-row{grid-template-columns:1fr;max-width:320px}.share-wrap,.share-actions{max-width:320px}}
+
+/* ── RANK BLOCK (Day 2) ── */
+.rank-box{background:var(--el);border-radius:var(--r16);padding:22px 16px 18px;border:1px solid var(--border);width:100%;text-align:center;margin-top:4px}
+.rank-lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--td);margin-bottom:12px}
+.rank-top-word{font-family:'Bai Jamjuree',sans-serif;font-size:clamp(38px,8vw,52px);font-weight:700;line-height:1;color:var(--t2);letter-spacing:-.01em;display:block}
+.rank-pct{font-family:'Bai Jamjuree',sans-serif;font-size:clamp(44px,9vw,60px);font-weight:700;line-height:1;color:var(--t1);letter-spacing:-.02em;display:block}
+.rank-sub{font-size:11px;color:var(--td);margin-top:10px;letter-spacing:.05em}
+
+/* ── DAY2 extras ── */
+.lb-box{background:var(--el);border-radius:var(--r14);padding:14px 16px;border:1px solid var(--border);width:100%}
+.lb-row{display:flex;align-items:center;justify-content:space-between}
+.lb-rank{font-size:26px;font-weight:700;color:var(--t1)}
+.lb-sub{font-size:10px;color:var(--td);margin-top:2px}
+.lb-pct{font-size:24px;font-weight:700;color:var(--pr);text-align:right}
+/* DAY3 extras */
+.crit-list{display:flex;flex-direction:column;gap:6px;width:100%}
+.crit-row{display:flex;align-items:flex-start;gap:8px}
+.crit-dot{width:17px;height:17px;border-radius:50%;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.cd-y{background:rgba(56,142,60,.2);color:#66BB6A;border:1px solid rgba(56,142,60,.3)}
+.cd-n{background:rgba(255,255,255,.04);color:var(--td);border:1px solid var(--border)}
+.crit-text{font-size:11px;line-height:1.5;color:var(--t2)}
+.crit-text.miss{color:var(--td)}
+.crit-wt{font-size:10px;color:var(--td);margin-top:1px}
+.tge-row{display:flex;align-items:center;gap:7px;padding:9px 12px;background:rgba(247,209,51,.05);border:1px solid rgba(247,209,51,.2);border-radius:var(--r8);font-size:11px;color:var(--pr);width:100%}
+
+/* ── BUTTONS ── */
+.card-actions{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px 16px;border-radius:var(--r100);border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;transition:all .15s}
+.btn-pr{background:var(--pr);color:#151515}
+.btn-pr:hover{background:var(--pr-d);transform:translateY(-1px);box-shadow:0 6px 20px rgba(247,209,51,.2)}
+.btn-pr:active{background:var(--pr-a);transform:translateY(0)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
+.btn-ghost:hover{border-color:var(--border-h);background:var(--hover);color:var(--t1)}
+.btn-outline-pr{background:transparent;border:1px solid var(--border-h);color:var(--pr)}
+.btn-outline-pr:hover{background:rgba(247,209,51,.07)}
+
+/* ── FOOTER ── */
+.rev-footer{width:100%;max-width:880px;margin-top:36px;padding:16px 0 48px;display:flex;align-items:center;justify-content:center;gap:8px}
+.footer-lbl{font-size:12px;color:var(--td)}
+.footer-cd{font-size:12px;font-weight:600;color:var(--t3);font-variant-numeric:tabular-nums;letter-spacing:.06em}
+
+/* ══ MODAL ══ */
+.modal-ov{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0);backdrop-filter:blur(0px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  pointer-events:none;
+  transition:background .32s ease,backdrop-filter .32s ease;
+}
+.modal-ov.act{background:rgba(0,0,0,.8);backdrop-filter:blur(16px);pointer-events:all}
+.modal-dismiss{position:absolute;inset:0}
+.modal-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px}
+
+/* Card in modal — transforms are set by JS per card origin */
+.modal-card{
+  width:min(300px,85vw);aspect-ratio:4/5;
+  border-radius:var(--r20);overflow:hidden;position:relative;
+  will-change:transform,opacity;
+  opacity:0;pointer-events:none;
+}
+.modal-card-inner{
+  position:absolute;inset:0;background:var(--paper);
+  border:1px solid rgba(247,209,51,.28);border-radius:var(--r20);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 22px 22px;gap:8px;
+}
+.modal-card-inner::before{content:'';position:absolute;inset:0;border-radius:var(--r20);background:radial-gradient(ellipse at 50% 0%,rgba(247,209,51,.09) 0%,transparent 55%);pointer-events:none}
+@keyframes popnum{from{opacity:0;transform:translateY(14px) scale(.9)}to{opacity:1;transform:none}}
+.modal-num{animation:popnum .4s cubic-bezier(.34,1.2,.64,1) both .2s}
+
+.modal-actions{
+  width:min(300px,85vw);display:flex;flex-direction:column;gap:8px;
+  opacity:0;transform:translateY(8px);transition:all .25s ease .44s;
+}
+.modal-ov.act .modal-actions{opacity:1;transform:translateY(0)}
+
+/* confetti */
+.confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:var(--r20)}
+.cf{position:absolute;border-radius:1px;animation:cf-fall 1.3s ease-out forwards}
+@keyframes cf-fall{0%{opacity:1;transform:translateY(-10px) rotate(0)}100%{opacity:0;transform:translateY(115%) rotate(700deg)}}
+
+@media(max-width:640px){.cols{grid-template-columns:1fr;max-width:320px}}
+
+/* ── GATED PAGE ── */
+.gate-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;min-height:calc(100vh - 46px)}
+.gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:0}
+.gate-header{text-align:center;margin-bottom:28px}
+.gate-h1{font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.01em;color:var(--t1)}
+.gate-sub{font-size:14px;color:var(--t3);margin-top:6px}
+.gate-step{background:var(--paper);border:1px solid var(--border);border-radius:var(--r16);padding:18px 20px;display:flex;align-items:center;gap:14px;transition:border-color .2s,opacity .2s}
+.gate-step+.gate-step{margin-top:8px}
+.gate-step.done{border-color:rgba(102,187,106,.35)}
+.gate-step.locked{opacity:.38;pointer-events:none}
+.gs-num{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--t3);flex-shrink:0;transition:all .2s}
+.gate-step.done .gs-num{background:rgba(102,187,106,.12);border-color:rgba(102,187,106,.4);color:#66BB6A}
+.gs-body{flex:1;min-width:0}
+.gs-title{font-size:14px;font-weight:600;color:var(--t1)}
+.gs-desc{font-size:12px;color:var(--td);margin-top:2px;transition:color .2s}
+.gate-step.done .gs-desc{color:#66BB6A}
+.gs-btn{padding:7px 14px;border-radius:var(--r100);border:1px solid var(--border);background:transparent;color:var(--t2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.gs-btn:hover{background:var(--hover);color:var(--t1)}
+.gs-btn.pr{background:var(--pr);border-color:var(--pr);color:#151515}
+.gs-btn.pr:hover{background:var(--pr-d)}
+.gs-check{width:24px;height:24px;border-radius:50%;background:rgba(102,187,106,.12);border:1px solid rgba(102,187,106,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#66BB6A;font-size:12px}
+
+/* ── NOT ELIGIBLE ── */
+.nope-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;min-height:calc(100vh - 46px)}
+.nope-card{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.nope-ico{width:64px;height:64px;border-radius:50%;background:var(--el);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+.nope-h1{font-size:24px;font-weight:700;color:var(--t1);margin-top:4px}
+.nope-handle{font-size:13px;color:var(--t3);background:var(--el);border:1px solid var(--border);border-radius:var(--r100);padding:6px 16px;display:inline-block;letter-spacing:.02em}
+.nope-txt{font-size:14px;color:var(--td);line-height:1.65;max-width:300px}
+.nope-divider{width:40px;height:1px;background:var(--border)}
+.nope-link{font-size:13px;color:var(--t3);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:color .15s,border-color .15s}
+.nope-link:hover{color:var(--t1);border-color:var(--t3)}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div class="pw-ov" id="pw-ov">
+  <div class="pw-box">
+    <div class="pw-logo">WALLCHAIN</div>
+    <div class="pw-title">Enter password to preview</div>
+    <div class="pw-field-wrap">
+      <input class="pw-field" id="pw-input" type="password" placeholder="Password" autocomplete="off"
+        onkeydown="if(event.key==='Enter')checkPw()">
+    </div>
+    <div class="pw-err" id="pw-err"></div>
+    <button class="pw-btn" onclick="checkPw()">Continue →</button>
+  </div>
+</div>
+
+<nav class="dev">
+  <button class="db on" id="scr-gt" onclick="setScreen('gated')">Gate</button>
+  <button class="db" id="scr-d1" onclick="setScreenDay(1)">Day 1</button>
+  <button class="db" id="scr-d2" onclick="setScreenDay(2)">Day 2</button>
+  <button class="db" id="scr-d3" onclick="setScreenDay(3)">Day 3</button>
+  <button class="db" id="scr-ne" onclick="setScreen('not-eligible')">Not Eligible</button>
+  <div class="dev-sep" style="margin-left:auto"></div>
+  <button class="db on" id="vb-cx" onclick="setVer('complex')">Full Version</button>
+  <button class="db" id="vb-si" onclick="setVer('simple')">Simplified</button>
+</nav>
+
+<div class="page" id="page-reveal" style="display:none">
+  <div class="rev">
+    <div class="rev-header" id="rev-header"><div class="rev-h1">Check your $WALL airdrop allocation</div></div>
+    <div id="stepper-area"></div>
+    <div id="share-wrap" class="share-wrap"></div>
+    <div id="action-row-area"></div>
+    <div class="rev-footer">
+      <span class="footer-lbl" id="footer-lbl">Next part unlocks in</span>
+      <span class="footer-cd" id="cd">23:39:53</span>
+    </div>
+  </div>
+</div>
+
+<!-- GATED PAGE -->
+<div class="page" id="page-gated">
+  <div class="gate-page">
+    <div class="gate-card">
+      <div class="gate-header">
+        <div class="gate-h1">Wallchain Airdrop</div>
+        <div class="gate-sub">Connect your accounts to check eligibility</div>
+      </div>
+
+      <div class="gate-step" id="gs1">
+        <div class="gs-num" id="gs1-num">1</div>
+        <div class="gs-body">
+          <div class="gs-title">Connect X</div>
+          <div class="gs-desc" id="gs1-desc">Verify your Twitter / X account</div>
+        </div>
+        <button class="gs-btn pr" id="gs1-btn" onclick="connectX()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.624L18.244 2.25z"/></svg>
+          Connect X
+        </button>
+      </div>
+
+      <div class="gate-step locked" id="gs2">
+        <div class="gs-num" id="gs2-num">2</div>
+        <div class="gs-body">
+          <div class="gs-title">Connect Wallet</div>
+          <div class="gs-desc" id="gs2-desc">Sign to verify wallet ownership</div>
+        </div>
+        <button class="gs-btn" id="gs2-btn" onclick="connectWallet()">Connect</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOT ELIGIBLE PAGE -->
+<div class="page" id="page-nope" style="display:none">
+  <div class="nope-page">
+    <div class="nope-card">
+      <div class="nope-ico">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,245,.25)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+      <div class="nope-h1">Not eligible</div>
+      <div class="nope-handle">@dima_example</div>
+      <div class="nope-txt">This X account wasn't part of the Wallchain airdrop snapshot. Only accounts that met the eligibility criteria before the snapshot date qualify.</div>
+      <div class="nope-divider"></div>
+      <a href="#" class="nope-link">Learn about eligibility criteria →</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal-ov">
+  <div class="modal-dismiss" onclick="closeModal()"></div>
+  <div class="modal-content">
+    <div class="modal-card" id="modal-card">
+      <div class="modal-card-inner">
+        <div class="confetti-wrap" id="confetti"></div>
+        <div style="position:relative;display:flex;align-items:baseline;gap:10px;justify-content:center">
+          <div class="co-num modal-num" id="m-num">2,490</div>
+          <div class="co-ticker" style="font-size:16px;color:var(--t3)">$WALL</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 3v13M7 11l5 5 5-5"/><rect x="3" y="18" width="18" height="3" rx="1.5" fill="white" stroke="none"/></svg>
+        Download Video
+      </button>
+      <button class="btn btn-ghost" style="font-size:13px;font-weight:400;color:var(--td);border-color:transparent;padding:8px" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA={
+  tier:'NFT Holders',dot:'◆',
+  parts:[2490,6847,3113],total:12450,
+  rank:1240,holders:38500,pct:6.3,
+};
+let curDay=1,curSt='closed',curVer='complex';
+
+/* ── RENDER ── */
+function render(){
+  const openDays=[];
+  for(let i=1;i<=3;i++){
+    if(i<curDay||(i===curDay&&curSt==='open')) openDays.push(i);
+  }
+  const revTotal=openDays.reduce((s,d)=>s+DATA.parts[d-1],0);
+  const anyOpen=openDays.length>0;
+  const allOpen=openDays.length===3;
+  const todayClosed=curSt==='closed';
+
+  // header — static, don't overwrite
+
+  // stepper
+  document.getElementById('stepper-area').innerHTML=buildStepper(openDays);
+
+  // share card (always visible)
+  document.getElementById('share-wrap').innerHTML=buildShareCard(openDays,revTotal,todayClosed);
+
+  // action row — depends only on today's state
+  const ara=document.getElementById('action-row-area');
+  if(todayClosed){
+    ara.innerHTML=`<div class="action-row">
+      <button class="btn btn-pr" style="flex:1" onclick="triggerOpen(${curDay})">Open Day ${curDay}</button>
+    </div>`;
+  } else {
+    ara.innerHTML=`<div class="action-row">
+      <button class="btn btn-ghost" onclick="doShare()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.624L18.244 2.25z"/></svg>
+        Share on X
+      </button>
+      <button class="replay-ico" onclick="openModal(${curDay},true)" title="Replay">↺</button>
+    </div>`;
+  }
+
+  // footer
+  document.getElementById('footer-lbl').textContent=allOpen?'All parts revealed':'Next part unlocks in';
+  document.getElementById('cd').textContent=allOpen?'':'23:39:53';
+}
+
+function buildStepper(openDays){
+  const lockSvg=`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`;
+  const steps=[1,2,3].map(d=>{
+    const isDone=openDays.includes(d);
+    const isActive=d===curDay&&curSt==='closed';
+    const isLocked=d>curDay;
+    const cls=isDone?'s-done':isActive?'s-active':'s-locked';
+    const icon=isDone?'✓':isLocked?lockSvg:d;
+    let sub='';
+    if(isDone) sub=`<div class="step-sub">+${fmt(DATA.parts[d-1])} $WALL</div>`;
+    else if(isActive) sub=`<div class="step-sub" style="color:rgba(247,209,51,.5)">Available now</div>`;
+    else if(isLocked){
+      const cd=d===curDay+1?'23:39':'47:39';
+      sub=`<div class="step-sub" style="font-variant-numeric:tabular-nums">Unlock in ${cd}</div>`;
+    }
+    return`<div class="step ${cls}"><div class="step-circle">${icon}</div><div class="step-lbl">Day ${d}</div>${sub}</div>`;
+  });
+  const lines=[0,1].map(i=>{
+    const lineDone=openDays.includes(i+1)&&openDays.length>i+1;
+    return`<div class="step-line${lineDone?' done':''}"></div>`;
+  });
+  return`<div class="stepper">${steps[0]}${lines[0]}${steps[1]}${lines[1]}${steps[2]}</div>`;
+}
+
+function buildShareCard(openDays,total,isClosed){
+  const avatarHtml=`<div class="sc-header">
+    <div class="sc-user">
+      <div class="sc-avatar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,245,.35)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <span class="sc-handle">@dima_example</span>
+    </div>
+    <div class="sc-header-tier">
+      <span class="sc-tier-lbl">Tier</span>
+      <span class="sc-tier-name">${DATA.tier}</span>
+    </div>
+  </div>`;
+
+  // closed state — lootbox only
+  if(isClosed){
+    return`<div class="share-card is-closed" onclick="triggerOpen(${curDay})" style="justify-content:center;gap:16px">
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:1;width:100%">
+        <div class="lb-ring"></div>${lootboxSVG()}
+      </div>
+      <div style="position:relative;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,245,245,.2)">Tap to reveal</div>
+    </div>`;
+  }
+
+  const revealed=openDays.length;
+  const locked=3-revealed;
+  const showRank=revealed>=2&&curVer==='complex';
+  const showCriteria=openDays.includes(3)&&curVer==='complex';
+
+  // label and parts context
+  let mainLbl, partsHtml='', lockedNote='';
+  if(revealed===3){
+    mainLbl='Your total allocation';
+  } else {
+    mainLbl=revealed===1?'Part 1 of 3 unlocked':'2 of 3 parts unlocked';
+    const segs=[1,2,3].map(i=>`<div class="sc-part-seg${openDays.includes(i)?' done':''}"></div>`).join('');
+    partsHtml=`<div class="sc-parts-ind">${segs}</div>`;
+    lockedNote=`<div class="sc-locked-note">${locked} more part${locked>1?'s':''} locked</div>`;
+  }
+
+  const rankHtml=showRank?`<div class="sc-rank-box">
+    <div class="sc-rank-big">Top ${DATA.pct}% &nbsp;·&nbsp; #${fmt(DATA.rank)}</div>
+    <div class="sc-rank-sub">of ${fmt(DATA.holders)} holders</div>
+  </div>`:'';
+
+  const criteriaHtml=showCriteria?`<div class="sc-crit-wrap" style="margin-top:6px">
+    <span class="sc-crit-chip done">✓ NFT holder</span>
+    <span class="sc-crit-chip done">✓ 120+ days</span>
+    <span class="sc-crit-chip done">✓ 4 campaigns</span>
+    <span class="sc-crit-chip done">✓ 2,340 Quacks</span>
+    <span class="sc-crit-chip done">✓ Top 10%</span>
+    <span class="sc-crit-chip miss">— Referred 3+</span>
+  </div>`:'';
+
+  return`<div class="share-card">
+    ${avatarHtml}
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;width:100%;flex:1">
+      <div class="sc-lbl-main">${mainLbl}</div>
+      <div style="display:flex;align-items:baseline;gap:7px;justify-content:center">
+        <div class="sc-num" id="sc-main-num">${fmt(total)}</div>
+        <div class="sc-ticker" style="margin-top:0">$WALL</div>
+      </div>
+      ${partsHtml}
+      ${lockedNote}
+    </div>
+    ${rankHtml}
+    ${criteriaHtml}
+  </div>`;
+}
+
+function animateShareCard(){
+  const el=document.getElementById('sc-main-num');
+  if(!el) return;
+  const openDays=[];
+  for(let i=1;i<=3;i++) if(i<curDay||(i===curDay&&curSt==='open')) openDays.push(i);
+  const total=openDays.reduce((s,d)=>s+DATA.parts[d-1],0);
+  el.textContent='0';
+  animateOdometer(el,total,5000);
+}
+
+function buildDayBox(d,openDays){
+  const isPast=d<curDay;
+  const isToday=d===curDay;
+  const isLocked=d>curDay;
+  const isOpen=(isToday&&curSt==='open')||isPast;
+  const box=mk('div','day-box');
+
+  if(isLocked){
+    const cd=d===curDay+1?'23:39:53':'47:39:53';
+    const when=d===curDay+1?'Unlocks tomorrow':'Unlocks in 2 days';
+    box.innerHTML=`
+      <div class="db-part">Part ${d}</div>
+      <div class="db-body">
+        <div class="db-lock-ico">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,245,.3)" stroke-width="1.5" stroke-linecap="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+        </div>
+        <div class="db-cd">${cd}</div>
+        <div class="db-when">${when}</div>
+      </div>
+      <div class="db-locked-lbl">Locked</div>`;
+  } else if(!isOpen){
+    box.classList.add('is-closed');
+    box.onclick=()=>triggerOpen(d);
+    box.innerHTML=`
+      <div class="db-part">Part ${d}</div>
+      <div class="db-body">
+        <svg width="44" height="38" viewBox="0 0 110 96" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.7">
+          <rect x="8" y="38" width="94" height="54" rx="6" fill="#1C1C1C" stroke="#3A3A3A" stroke-width="1.5"/>
+          <rect x="4" y="22" width="102" height="22" rx="5" fill="#242424" stroke="#3A3A3A" stroke-width="1.5"/>
+          <rect x="49" y="22" width="12" height="22" rx="2" fill="#F7D133" opacity=".85"/>
+          <rect x="49" y="44" width="12" height="48" rx="2" fill="#F7D133" opacity=".7"/>
+          <rect x="4" y="29" width="102" height="8" rx="2" fill="#F7D133" opacity=".85"/>
+          <path d="M55 22 C42 14,28 8,30 18 C32 26,44 22,55 22Z" fill="#F7D133" opacity=".9"/>
+          <path d="M55 22 C68 14,82 8,80 18 C78 26,66 22,55 22Z" fill="#D9AE26" opacity=".9"/>
+          <circle cx="55" cy="22" r="5" fill="#F7D133"/>
+        </svg>
+      </div>
+      <button class="db-open-btn" onclick="event.stopPropagation();triggerOpen(${d})">Open Part ${d}</button>`;
+  } else {
+    box.classList.add('is-open');
+    box.innerHTML=`
+      <div class="db-part">Part ${d}</div>
+      <div class="db-replay" onclick="openModal(${d},false)" title="Replay reveal">↺</div>
+      <div class="db-body">
+        <div class="db-delta">+${fmt(DATA.parts[d-1])}</div>
+        <div class="db-wall">$WALL</div>
+      </div>`;
+  }
+  return box;
+}
+
+
+function mkClosed(d){
+  const el=mk('div','card-closed');
+  el.innerHTML=`
+    <div class="cc-shimmer"></div><div class="cc-grain"></div><div class="cc-glow"></div>
+    <div class="cc-part" style="text-align:center;width:100%">Part ${d}</div>
+    <div class="lootbox-wrap">
+      <div class="lb-ring"></div>
+      ${lootboxSVG()}
+    </div>
+    <div class="cc-tap">Tap to reveal</div>`;
+  return el;
+}
+
+function mkOpen(d){
+  const delta=DATA.parts[d-1];
+  const lbl=d===3?'Your final part':'Part '+d+' unlocked';
+  const el=mk('div','card-open vis');
+  el.innerHTML=`
+    <div class="co-part-lbl" style="text-align:center;width:100%">Part ${d}</div>
+    <div class="co-mid">
+      <div class="co-alloc-lbl">${lbl}</div>
+      <div class="co-num" style="color:var(--pr)">+${fmt(delta)}</div>
+      <div class="co-ticker">$WALL</div>
+    </div>
+    <div class="co-tier-wrap">
+      <div class="co-tier-lbl">Your tier</div>
+      <div class="co-tier-badge">${DATA.dot} ${DATA.tier}</div>
+    </div>`;
+  return el;
+}
+
+function mkLocked(d){
+  const cd=d===curDay+1?'23:39:53':'47:39:53';
+  const when=d===curDay+1?'unlocks tomorrow':'unlocks in 2 days';
+  const el=mk('div','card-locked');
+  el.innerHTML=`
+    <div class="cl-part" style="text-align:center;width:100%">Part ${d}</div>
+    <div class="cl-mid">
+      <div class="cl-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,245,.3)" stroke-width="1.5">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
+      <div class="cl-cd">${cd}</div>
+      <div class="cl-lbl">${when}</div>
+    </div>
+    <div class="cl-bottom">Locked</div>`;
+  return el;
+}
+
+function buildExtra(d){
+  if(d===2){
+    const box=mk('div','');
+    box.style.cssText='width:100%;';
+    box.innerHTML=`<div class="rank-box">
+      <div class="rank-lbl">Your rank in this airdrop</div>
+      <div><span class="rank-top-word">Top</span><span class="rank-pct">${DATA.pct}%</span></div>
+      <div class="rank-sub">#${fmt(DATA.rank)} out of ${fmt(DATA.holders)} holders</div>
+    </div>`;
+    return box;
+  }
+  if(d===3){
+    const box=mk('div','');
+    box.style.cssText='width:100%;margin-top:4px;display:flex;flex-direction:column;gap:8px';
+    box.innerHTML=`
+      <div class="crit-list">
+        ${cr(1,'NFT holder','Base allocation')}
+        ${cr(1,'Held NFT 120+ days','Loyalty multiplier')}
+        ${cr(1,'4 campaigns participated','Activity score')}
+        ${cr(1,'2,340 Quacks earned','Engagement score')}
+        ${cr(1,'Top 10% leaderboard','Rank bonus')}
+        ${cr(0,'Referred 3+ users','Not completed')}
+      </div>
+      <div class="tge-row">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Tokens arrive at TGE · <strong>Jan 31, 2026</strong>
+      </div>`;
+    return box;
+  }
+  return null;
+}
+
+function cr(y,t,w){return`<div class="crit-row"><div class="crit-dot ${y?'cd-y':'cd-n'}">${y?'✓':'—'}</div><div><div class="crit-text${y?'':' miss'}">${t}</div><div class="crit-wt">${w}</div></div></div>`;}
+
+/* ── LOOTBOX SVG ── */
+function lootboxSVG(){
+  return`<svg class="lootbox-svg" width="110" height="96" viewBox="0 0 110 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- box body -->
+    <rect x="8" y="38" width="94" height="54" rx="6" fill="#1C1C1C" stroke="#3A3A3A" stroke-width="1.5"/>
+    <!-- box lid -->
+    <rect x="4" y="22" width="102" height="22" rx="5" fill="#242424" stroke="#3A3A3A" stroke-width="1.5"/>
+    <!-- lid ribbon vertical -->
+    <rect x="49" y="22" width="12" height="22" rx="2" fill="#F7D133" opacity=".85"/>
+    <!-- body ribbon vertical -->
+    <rect x="49" y="44" width="12" height="48" rx="2" fill="#F7D133" opacity=".7"/>
+    <!-- lid ribbon horizontal -->
+    <rect x="4" y="29" width="102" height="8" rx="2" fill="#F7D133" opacity=".85"/>
+    <!-- bow left loop -->
+    <path d="M55 22 C42 14, 28 8, 30 18 C32 26, 44 22, 55 22Z" fill="#F7D133" opacity=".9"/>
+    <!-- bow right loop -->
+    <path d="M55 22 C68 14, 82 8, 80 18 C78 26, 66 22, 55 22Z" fill="#D9AE26" opacity=".9"/>
+    <!-- bow knot -->
+    <circle cx="55" cy="22" r="5" fill="#F7D133"/>
+    <!-- coins inside box (visible through gap) -->
+    <ellipse cx="40" cy="70" rx="10" ry="4" fill="#D9AE26" opacity=".6"/>
+    <ellipse cx="40" cy="67" rx="10" ry="4" fill="#F7D133" opacity=".7"/>
+    <ellipse cx="60" cy="66" rx="9" ry="3.5" fill="#D9AE26" opacity=".5"/>
+    <ellipse cx="60" cy="63" rx="9" ry="3.5" fill="#F7D133" opacity=".65"/>
+    <ellipse cx="75" cy="72" rx="8" ry="3" fill="#D9AE26" opacity=".5"/>
+    <ellipse cx="75" cy="69" rx="8" ry="3" fill="#F7D133" opacity=".6"/>
+    <!-- sparkles -->
+    <circle cx="20" cy="18" r="2" fill="#F7D133" opacity=".5"/>
+    <circle cx="90" cy="12" r="1.5" fill="#F7D133" opacity=".4"/>
+    <circle cx="95" cy="30" r="1" fill="#F7D133" opacity=".6"/>
+    <circle cx="14" cy="50" r="1.5" fill="#F7D133" opacity=".3"/>
+  </svg>`;
+}
+
+/* ══ MODAL ANIMATION from card origin ══ */
+let activeDay=1;
+
+function triggerOpen(d){
+  openModal(d,true);
+  setTimeout(()=>{curSt='open';render();},750);
+}
+
+function animateOdometer(el,target,duration){
+  const start=Date.now();
+  const tick=setInterval(()=>{
+    const t=Math.min((Date.now()-start)/duration,1);
+    // ease-out cubic: fast start → dramatic slowdown near end
+    const eased=1-Math.pow(1-t,3);
+    el.textContent=fmt(Math.round(eased*target));
+    if(t>=1){clearInterval(tick);el.textContent=fmt(target);}
+  },33);
+}
+
+function openModal(d,withConfetti){
+  activeDay=d;
+  const num=d===3?DATA.total:DATA.parts.slice(0,d).reduce((a,b)=>a+b,0);
+  document.getElementById('m-num').textContent=withConfetti?'0':fmt(num);
+
+  // get card origin rect
+  const wrap=document.getElementById('wrap'+d);
+  const wRect=wrap?wrap.getBoundingClientRect():null;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const mc=document.getElementById('modal-card');
+  const mW=Math.min(300,vw*.85),mH=mW*5/4;
+
+  // calculate origin transform: from card center to viewport center
+  let tx=0,ty=0,sc=0.35;
+  if(wRect){
+    const cardCx=wRect.left+wRect.width/2;
+    const cardCy=wRect.top+wRect.height/2;
+    const modalCx=vw/2, modalCy=vh/2;
+    tx=cardCx-modalCx;
+    ty=cardCy-modalCy;
+    sc=wRect.width/mW;
+  }
+
+  // set start position — from card location
+  mc.style.transition='none';
+  mc.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`;
+  mc.style.opacity='0';
+
+  // activate overlay
+  document.getElementById('modal-ov').classList.add('act');
+
+  // animate to center
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      mc.style.transition='transform .52s cubic-bezier(.34,1.22,.64,1), opacity .28s ease';
+      mc.style.transform='translate(0,0) scale(1)';
+      mc.style.opacity='1';
+    });
+  });
+
+  if(withConfetti){
+    setTimeout(spawnConfetti,480);
+    setTimeout(()=>animateOdometer(document.getElementById('m-num'),num,5000),300);
+  }
+}
+
+function closeModal(){
+  const wrap=document.getElementById('wrap'+activeDay);
+  const wRect=wrap?wrap.getBoundingClientRect():null;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const mc=document.getElementById('modal-card');
+  const mW=Math.min(300,vw*.85);
+
+  let tx=0,ty=0,sc=0.32;
+  if(wRect){
+    const cardCx=wRect.left+wRect.width/2;
+    const cardCy=wRect.top+wRect.height/2;
+    tx=cardCx-vw/2;
+    ty=cardCy-vh/2;
+    sc=wRect.width/mW;
+  }
+
+  mc.style.transition='transform .42s cubic-bezier(.4,0,.6,1), opacity .3s ease .05s';
+  mc.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`;
+  mc.style.opacity='0';
+
+  setTimeout(()=>{ document.getElementById('modal-ov').classList.remove('act'); },420);
+}
+
+/* ── CONFETTI ── */
+function spawnConfetti(){
+  const c=document.getElementById('confetti');c.innerHTML='';
+  const cols=['#F7D133','#D9AE26','#F5F5F5','#B88D19','#66BB6A','#C9A84C'];
+  for(let i=0;i<30;i++){
+    const p=mk('div','cf');
+    const sz=3+Math.random()*5;
+    p.style.cssText=`background:${cols[i%cols.length]};left:${6+Math.random()*88}%;width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.5}s;animation-duration:${1+Math.random()*.6}s;opacity:${.75+Math.random()*.25}`;
+    c.appendChild(p);
+  }
+}
+
+/* ── SCREEN SWITCHER ── */
+let curScreen='gated';
+
+function setScreen(s){
+  curScreen=s;
+  document.getElementById('page-reveal').style.display=s==='reveal'?'':'none';
+  document.getElementById('page-gated').style.display=s==='gated'?'':'none';
+  document.getElementById('page-nope').style.display=s==='not-eligible'?'':'none';
+  document.getElementById('modal-ov').classList.remove('act');
+  const mc=document.getElementById('modal-card');
+  mc.style.transition='none';mc.style.opacity='0';
+  updateNavBtns(s);
+  if(s==='gated') resetGate();
+}
+
+function setScreenDay(d){
+  curDay=d;curSt='closed';
+  setScreen('reveal');
+  render();
+}
+
+function updateNavBtns(s){
+  document.getElementById('scr-gt').classList.toggle('on',s==='gated');
+  document.getElementById('scr-d1').classList.toggle('on',s==='reveal'&&curDay===1);
+  document.getElementById('scr-d2').classList.toggle('on',s==='reveal'&&curDay===2);
+  document.getElementById('scr-d3').classList.toggle('on',s==='reveal'&&curDay===3);
+  document.getElementById('scr-ne').classList.toggle('on',s==='not-eligible');
+}
+
+/* ── GATE INTERACTIONS ── */
+let gateStep=1;
+
+function resetGate(){
+  gateStep=1;
+  const gs1=document.getElementById('gs1');
+  const gs2=document.getElementById('gs2');
+  if(!gs1||!gs2) return;
+  gs1.classList.remove('done');
+  gs2.classList.remove('done');
+  gs2.classList.add('locked');
+  document.getElementById('gs1-num').textContent='1';
+  document.getElementById('gs1-desc').textContent='Verify your Twitter / X account';
+  document.getElementById('gs2-num').textContent='2';
+  document.getElementById('gs2-desc').textContent='Sign to verify wallet ownership';
+  document.getElementById('gs1-btn').innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.624L18.244 2.25z"/></svg> Connect X`;
+  document.getElementById('gs1-btn').className='gs-btn pr';
+  document.getElementById('gs1-btn').style.display='';
+  document.getElementById('gs2-btn').textContent='Connect';
+  document.getElementById('gs2-btn').className='gs-btn';
+  document.getElementById('gs2-btn').style.display='';
+  // remove any leftover checkmarks
+  document.querySelectorAll('.gs-check-inserted').forEach(el=>el.remove());
+}
+
+function connectX(){
+  gateStep=2;
+  const gs1=document.getElementById('gs1');
+  gs1.classList.add('done');
+  document.getElementById('gs1-num').textContent='✓';
+  document.getElementById('gs1-desc').textContent='@dima_example connected';
+  const btn1=document.getElementById('gs1-btn');
+  btn1.style.display='none';
+  const chk=mk('div','gs-check gs-check-inserted');
+  chk.textContent='✓';
+  gs1.appendChild(chk);
+  // unlock step 2
+  const gs2=document.getElementById('gs2');
+  gs2.classList.remove('locked');
+  document.getElementById('gs2-btn').classList.add('pr');
+}
+
+function connectWallet(){
+  const gs2=document.getElementById('gs2');
+  gs2.classList.add('done');
+  document.getElementById('gs2-num').textContent='✓';
+  document.getElementById('gs2-desc').textContent='0x1a2b…3c4d verified';
+  const btn2=document.getElementById('gs2-btn');
+  btn2.style.display='none';
+  const chk=mk('div','gs-check gs-check-inserted');
+  chk.textContent='✓';
+  gs2.appendChild(chk);
+  setTimeout(()=>setScreen('reveal'),700);
+}
+
+/* ── DEV CONTROLS ── */
+function setDay(d){
+  curDay=d;curSt='closed';
+  document.getElementById('modal-ov').classList.remove('act');
+  render();
+}
+function setVer(v){
+  curVer=v;
+  document.getElementById('vb-cx').classList.toggle('on',v==='complex');
+  document.getElementById('vb-si').classList.toggle('on',v==='simple');
+  render();
+}
+function doShare(){alert('Opens X with pre-filled share card');}
+function fmt(n){return Number(n).toLocaleString();}
+function mk(tag,cls){const e=document.createElement(tag);if(cls)e.className=cls;return e;}
+
+/* ── COUNTDOWN ── */
+setInterval(()=>{
+  const el=document.getElementById('cd');
+  if(!el||!el.textContent.includes(':'))return;
+  let[h,m,s]=el.textContent.split(':').map(Number);
+  s--;if(s<0){s=59;m--;}if(m<0){m=59;h--;}if(h<0){h=0;m=0;s=0;}
+  el.textContent=[h,m,s].map(x=>String(x).padStart(2,'0')).join(':');
+},1000);
+
+/* ── PASSWORD ── */
+const PW='ilovedesign';
+function checkPw(){
+  const val=document.getElementById('pw-input').value;
+  const err=document.getElementById('pw-err');
+  const field=document.getElementById('pw-input');
+  if(val===PW){
+    const ov=document.getElementById('pw-ov');
+    ov.classList.add('out');
+    setTimeout(()=>ov.remove(),450);
+    sessionStorage.setItem('wc_auth','1');
+  } else {
+    err.textContent='Incorrect password';
+    field.classList.add('err');
+    field.value='';
+    setTimeout(()=>{field.classList.remove('err');err.textContent='';},1200);
+  }
+}
+if(sessionStorage.getItem('wc_auth')==='1'){
+  document.getElementById('pw-ov').remove();
+} else {
+  setTimeout(()=>document.getElementById('pw-input').focus(),100);
+}
+
+render();
+</script></body>
+</html>
